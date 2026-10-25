@@ -1,0 +1,30 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build --config Release
+      - name: Test
+        run: ctest --test-dir build -C Release --output-on-failure
+      - name: Configure Xilinx adapter with fake BSP
+        run: cmake -S . -B build-xilinx -DCMAKE_BUILD_TYPE=Release -DEMBEDDED_C_KIT_BUILD_XILINX_ADAPTERS=ON -DEMBEDDED_C_KIT_XILINX_BSP_INCLUDE_DIR=tests/fake_xilinx
+      - name: Build Xilinx adapter
+        run: cmake --build build-xilinx --config Release
+      - name: Test Xilinx adapter
+        run: ctest --test-dir build-xilinx -C Release --output-on-failure
