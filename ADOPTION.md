@@ -68,4 +68,5 @@ subdirectory, they default to off; set `EMBEDDED_C_KIT_BUILD_EXAMPLES=ON` only w
 
 - [Architecture](ARCHITECTURE.md)
 - [Device link example](examples/device_link/README.md)
+- [Vivado/Vitis platform template](https://github.com/DCRimbaud/vivado-vitis-template)
 - [Repository](https://github.com/DCRimbaud/embedded-c-kit)

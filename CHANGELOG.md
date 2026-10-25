@@ -5,6 +5,7 @@
 - added the `embedded_c_kit` umbrella CMake target for integrated use
 - added a host-runnable device-link integration example with detailed function contracts
 - added an adoption guide for choosing package, module, or example reuse
+- linked the Vivado/Vitis platform template for BD, XSA, and Vitis project integration
 - added transfer descriptors with borrowed/static/pooled/transferred ownership
 - added a fixed descriptor queue that preserves ownership on full/error paths
 - added alignment-safe big/little-endian integer read/write helpers

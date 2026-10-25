@@ -34,6 +34,8 @@ cycles. See [ARCHITECTURE.md](https://github.com/DCRimbaud/embedded-c-kit/blob/m
   module, or example reuse.
 - Read [the device-link example](https://github.com/DCRimbaud/embedded-c-kit/blob/main/examples/device_link/README.md)
   for an end-to-end host-runnable composition.
+- Use [vivado-vitis-template](https://github.com/DCRimbaud/vivado-vitis-template) for MicroBlaze/Zynq
+  Block Design creation, Vitis skeletons, AXI-Lite RTL, XDC, and XSA/BSP integration.
 
 ## Build and test
 
