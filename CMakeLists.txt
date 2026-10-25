@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(embedded_c_kit VERSION 0.3.0 LANGUAGES C)
+project(embedded_c_kit VERSION 0.3.1 LANGUAGES C)
 
 add_library(ringbuf STATIC src/ring.c)
 target_include_directories(ringbuf
