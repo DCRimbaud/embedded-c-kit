@@ -19,26 +19,26 @@
 extern "C" {
 #endif
 
-#define DEVICE_LINK_SOF 0x5Au
-#define DEVICE_LINK_MAX_PAYLOAD 32u
-#define DEVICE_LINK_RX_CAPACITY 128u
-#define DEVICE_LINK_TX_SLOT_COUNT 4u
-#define DEVICE_LINK_TX_SLOT_SIZE 64u
-#define DEVICE_LINK_TX_QUEUE_DEPTH 4u
+#define DEVICE_LINK_SOF 0x5Au              /**< Frame start byte used by the example protocol. */
+#define DEVICE_LINK_MAX_PAYLOAD 32u       /**< Maximum payload bytes accepted in one frame. */
+#define DEVICE_LINK_RX_CAPACITY 128u      /**< Fixed RX ring capacity in bytes. */
+#define DEVICE_LINK_TX_SLOT_COUNT 4u      /**< Number of pooled response buffers. */
+#define DEVICE_LINK_TX_SLOT_SIZE 64u      /**< Capacity of one pooled response buffer. */
+#define DEVICE_LINK_TX_QUEUE_DEPTH 4u     /**< Maximum queued response descriptors. */
 
 /** Counters exposed by the example for host verification and diagnostics. */
 typedef struct {
-    uint32_t valid_frames;
-    uint32_t handled_frames;
-    uint32_t checksum_errors;
-    uint32_t framing_errors;
-    uint32_t unsupported_commands;
-    uint32_t rx_drops;
-    uint32_t responses_queued;
-    uint32_t responses_sent;
-    uint32_t response_drops;
-    uint32_t release_errors;
-    uint32_t bytes_transmitted;
+    uint32_t valid_frames;          /**< Frames that passed length and checksum validation. */
+    uint32_t handled_frames;        /**< Valid frames whose response was queued successfully. */
+    uint32_t checksum_errors;       /**< Candidate frames rejected by checksum validation. */
+    uint32_t framing_errors;        /**< Noise bytes and invalid length headers discarded. */
+    uint32_t unsupported_commands;  /**< Valid frames whose command ID had no handler. */
+    uint32_t rx_drops;              /**< Bytes rejected because the RX ring was full. */
+    uint32_t responses_queued;      /**< Response descriptors accepted by the TX queue. */
+    uint32_t responses_sent;        /**< Response descriptors fully transmitted. */
+    uint32_t response_drops;        /**< Responses that could not be encoded or queued. */
+    uint32_t release_errors;        /**< Pooled slots whose generation release failed. */
+    uint32_t bytes_transmitted;     /**< Frame bytes accepted by the transport writer. */
 } device_link_stats_t;
 
 typedef struct device_link device_link_t;
@@ -58,20 +58,20 @@ typedef struct {
  * Production code should normally keep these fields private to its .c file.
  */
 struct device_link {
-    ringbuf_t rx;
-    uint8_t rx_storage[DEVICE_LINK_RX_CAPACITY];
-    ec_buf_pool_t tx_pool;
-    ec_pool_slot_t tx_slots[DEVICE_LINK_TX_SLOT_COUNT];
-    uint8_t tx_storage[DEVICE_LINK_TX_SLOT_COUNT * DEVICE_LINK_TX_SLOT_SIZE];
-    device_link_tx_release_t tx_release[DEVICE_LINK_TX_SLOT_COUNT];
-    ec_xfer_t tx_items[DEVICE_LINK_TX_QUEUE_DEPTH];
-    ec_xfer_queue_t tx_queue;
-    ec_xfer_t active_xfer;
-    uint32_t tx_offset;
-    int tx_active;
-    ec_log_t *logger;
-    ec_tx_arbiter_t *tx;
-    device_link_stats_t stats;
+    ringbuf_t rx;                                      /**< Incoming byte ring and its public state. */
+    uint8_t rx_storage[DEVICE_LINK_RX_CAPACITY];       /**< Caller-owned storage for the RX ring. */
+    ec_buf_pool_t tx_pool;                             /**< Fixed response-slot allocator. */
+    ec_pool_slot_t tx_slots[DEVICE_LINK_TX_SLOT_COUNT];/**< Per-slot generation metadata. */
+    uint8_t tx_storage[DEVICE_LINK_TX_SLOT_COUNT * DEVICE_LINK_TX_SLOT_SIZE]; /**< Pooled response bytes. */
+    device_link_tx_release_t tx_release[DEVICE_LINK_TX_SLOT_COUNT]; /**< Release callback contexts. */
+    ec_xfer_t tx_items[DEVICE_LINK_TX_QUEUE_DEPTH];    /**< Descriptor storage owned by the TX queue. */
+    ec_xfer_queue_t tx_queue;                          /**< Fixed FIFO of response descriptors. */
+    ec_xfer_t active_xfer;                             /**< Descriptor currently being transmitted. */
+    uint32_t tx_offset;                                /**< Next byte index within active_xfer. */
+    int tx_active;                                     /**< Non-zero while a frame owns the writer. */
+    ec_log_t *logger;                                  /**< Borrowed optional logger. */
+    ec_tx_arbiter_t *tx;                               /**< Borrowed transmit arbiter. */
+    device_link_stats_t stats;                         /**< Counters for diagnostics and host tests. */
 };
 
 /**

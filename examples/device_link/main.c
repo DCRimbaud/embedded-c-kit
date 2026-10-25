@@ -141,3 +141,149 @@ static int append_expected_frame(capture_t *destination,
     destination->count += encoded;
     return 1;
 }
+
+/**
+ * @brief Run the complete host-side integration demonstration.
+ *
+ * The scenario feeds a split ping frame, rejects a corrupted echo frame, accepts
+ * a corrected echo, sends an unsupported command, flushes all queued responses,
+ * and compares the transmitted bytes against independently assembled expected
+ * frames. Each phase is separated so a future project can replace one policy
+ * without copying the whole example blindly.
+ *
+ * @return Zero when every integration invariant passes, or one on failure.
+ * @pre The host C runtime and stdio are available; no target hardware is required.
+ * @note This is a host example, not a production application entry point. It uses
+ *       one thread and deliberately exercises parser resynchronization.
+ * @author Xue Weisen
+ */
+int main(void)
+{
+    static const uint8_t pong[] = {'P', 'O', 'N', 'G'};
+    static const uint8_t echo_payload[] = {'a', 'b', 'c'};
+    static const uint8_t unknown_payload[] = {'x'};
+    static const uint8_t error_payload[] = {'E', 'R', 'R'};
+    uint8_t ping_frame[64];
+    uint8_t echo_frame[64];
+    uint8_t corrupt_frame[64];
+    uint8_t unknown_frame[64];
+    uint32_t ping_length;
+    uint32_t echo_length;
+    uint32_t unknown_length;
+    capture_t capture = {0};
+    capture_t expected = {0};
+    ec_log_t logger;
+    ec_tx_arbiter_t tx;
+    device_link_t link;
+
+    /* Initialization phase: bind a deterministic writer, logger, and all fixed storage. */
+    ec_log_init(&logger);
+    ec_log_set_sink(&logger, console_sink, NULL);
+    ec_log_set_minimum_level(&logger, EC_LOG_DEBUG);
+    ec_tx_arbiter_init(&tx, capture_write, &capture);
+    if (device_link_init(&link, &logger, &tx) == 0) {
+        (void)fprintf(stderr, "device link example: initialization failed\n");
+        return 1;
+    }
+
+    /* Input phase: encode one request for each supported demonstration path. */
+    ping_length = device_link_encode_frame(0x01u, 0x1234u, NULL, 0u,
+                                           ping_frame, (uint32_t)sizeof(ping_frame));
+    echo_length = device_link_encode_frame(0x02u, 0x1235u,
+                                           echo_payload,
+                                           (uint8_t)sizeof(echo_payload),
+                                           echo_frame,
+                                           (uint32_t)sizeof(echo_frame));
+    unknown_length = device_link_encode_frame(0x55u, 0x1236u,
+                                              unknown_payload,
+                                              (uint8_t)sizeof(unknown_payload),
+                                              unknown_frame,
+                                              (uint32_t)sizeof(unknown_frame));
+    if ((ping_length == 0u) || (echo_length == 0u) || (unknown_length == 0u)) {
+        (void)fprintf(stderr, "device link example: request encoding failed\n");
+        return 1;
+    }
+
+    /* Partial-frame phase: the parser must wait until the complete ping arrives. */
+    if (feed_exact(&link, ping_frame, 4u) == 0) {
+        return 1;
+    }
+    if (device_link_poll(&link) != 0u) {
+        (void)fprintf(stderr, "device link example: incomplete frame was consumed\n");
+        return 1;
+    }
+    if (feed_exact(&link, &ping_frame[4], ping_length - 4u) == 0) {
+        return 1;
+    }
+    if (device_link_poll(&link) != 1u) {
+        (void)fprintf(stderr, "device link example: ping frame was not handled\n");
+        return 1;
+    }
+
+    /* Recovery phase: corrupt one checksum, then prove the parser resynchronizes on the next frame. */
+    (void)memcpy(corrupt_frame, echo_frame, echo_length);
+    corrupt_frame[echo_length - 1u] ^= 0xFFu;
+    if (feed_exact(&link, corrupt_frame, echo_length) == 0) {
+        return 1;
+    }
+    if (device_link_poll(&link) != 0u) {
+        (void)fprintf(stderr, "device link example: corrupted frame was accepted\n");
+        return 1;
+    }
+    if (feed_exact(&link, echo_frame, echo_length) == 0) {
+        return 1;
+    }
+    if (device_link_poll(&link) != 1u) {
+        (void)fprintf(stderr, "device link example: echo frame was not handled\n");
+        return 1;
+    }
+
+    /* Unsupported-command phase: the dispatcher must produce one explicit error response. */
+    if (feed_exact(&link, unknown_frame, unknown_length) == 0) {
+        return 1;
+    }
+    if (device_link_poll(&link) != 1u) {
+        (void)fprintf(stderr, "device link example: unknown command was not handled\n");
+        return 1;
+    }
+
+    /* Transmit phase: flush all descriptors and release every pooled slot. */
+    if (device_link_flush(&link) != 3u) {
+        (void)fprintf(stderr, "device link example: response flush failed\n");
+        return 1;
+    }
+    if (ec_buf_pool_in_use(&link.tx_pool) != 0u) {
+        (void)fprintf(stderr, "device link example: pooled slot leak\n");
+        return 1;
+    }
+
+    /* Verification phase: compare exact output bytes and the observable counters. */
+    if ((append_expected_frame(&expected, 0x81u, 0x1234u,
+                               pong, (uint8_t)sizeof(pong)) == 0) ||
+        (append_expected_frame(&expected, 0x82u, 0x1235u,
+                               echo_payload, (uint8_t)sizeof(echo_payload)) == 0) ||
+        (append_expected_frame(&expected, 0xFFu, 0x1236u,
+                               error_payload, (uint8_t)sizeof(error_payload)) == 0)) {
+        return 1;
+    }
+
+    if ((capture.count != expected.count) ||
+        (memcmp(capture.bytes, expected.bytes, capture.count) != 0)) {
+        (void)fprintf(stderr, "device link example: response bytes differ\n");
+        return 1;
+    }
+
+    if ((link.stats.valid_frames != 3u) ||
+        (link.stats.handled_frames != 3u) ||
+        (link.stats.checksum_errors != 1u) ||
+        (link.stats.unsupported_commands != 1u) ||
+        (link.stats.responses_queued != 3u) ||
+        (link.stats.responses_sent != 3u) ||
+        (link.stats.release_errors != 0u)) {
+        (void)fprintf(stderr, "device link example: counter invariant failed\n");
+        return 1;
+    }
+
+    (void)printf("device link example: PASS\n");
+    return 0;
+}

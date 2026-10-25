@@ -3,6 +3,8 @@
 ## 0.3.0 - 2026-10-26
 
 - added the `embedded_c_kit` umbrella CMake target for integrated use
+- added a host-runnable device-link integration example with detailed function contracts
+- added an adoption guide for choosing package, module, or example reuse
 - added transfer descriptors with borrowed/static/pooled/transferred ownership
 - added a fixed descriptor queue that preserves ownership on full/error paths
 - added alignment-safe big/little-endian integer read/write helpers

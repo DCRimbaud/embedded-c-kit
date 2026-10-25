@@ -72,6 +72,26 @@ else()
     target_compile_options(bytes PRIVATE -Wall -Wextra -Wpedantic -Werror)
 endif()
 
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+    set(EMBEDDED_C_KIT_EXAMPLES_DEFAULT ON)
+else()
+    set(EMBEDDED_C_KIT_EXAMPLES_DEFAULT OFF)
+endif()
+option(EMBEDDED_C_KIT_BUILD_EXAMPLES "Build host-side examples" ${EMBEDDED_C_KIT_EXAMPLES_DEFAULT})
+
+if(EMBEDDED_C_KIT_BUILD_EXAMPLES)
+    add_executable(device_link_example
+        examples/device_link/device_link.c
+        examples/device_link/main.c)
+    target_link_libraries(device_link_example PRIVATE embedded_c_kit)
+    target_compile_features(device_link_example PRIVATE c_std_99)
+    if(MSVC)
+        target_compile_options(device_link_example PRIVATE /W4)
+    else()
+        target_compile_options(device_link_example PRIVATE -Wall -Wextra -Wpedantic -Werror)
+    endif()
+endif()
+
 include(CTest)
 if(BUILD_TESTING)
     add_executable(test_ring tests/test_ring.c)
@@ -95,6 +115,11 @@ if(BUILD_TESTING)
     add_executable(test_bytes tests/test_bytes.c)
     target_link_libraries(test_bytes PRIVATE bytes)
     add_test(NAME bytes COMMAND test_bytes)
+    if(EMBEDDED_C_KIT_BUILD_EXAMPLES)
+        add_test(NAME device_link_example COMMAND device_link_example)
+        set_tests_properties(device_link_example PROPERTIES
+            PASS_REGULAR_EXPRESSION "device link example: PASS")
+    endif()
 endif()
 
 include(GNUInstallDirs)

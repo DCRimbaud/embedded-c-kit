@@ -9,6 +9,12 @@ The kit is consumed as source or as a CMake package. Its modules are designed fo
 linking, but they are not independent processes, plugins, or mandatory separate deliverables. A production
 firmware normally links several modules into one image.
 
+## Reuse entry points
+
+- [ADOPTION.md](ADOPTION.md) explains package, module, and example reuse.
+- [examples/device_link](examples/device_link/README.md) demonstrates the full RX/TX ownership path.
+- Individual CMake targets support a smaller firmware footprint; the umbrella target supports integrated use.
+
 ## Composition model
 
 An **independent module** in this repository means:

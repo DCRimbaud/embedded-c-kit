@@ -28,6 +28,13 @@ link a single module or the umbrella `embedded_c_kit` target. Modules may share 
 contracts and may be composed into a platform bundle; they must not duplicate common types or form dependency
 cycles. See [ARCHITECTURE.md](https://github.com/DCRimbaud/embedded-c-kit/blob/main/ARCHITECTURE.md).
 
+## Start here
+
+- Read [ADOPTION.md](https://github.com/DCRimbaud/embedded-c-kit/blob/main/ADOPTION.md) to choose package,
+  module, or example reuse.
+- Read [the device-link example](https://github.com/DCRimbaud/embedded-c-kit/blob/main/examples/device_link/README.md)
+  for an end-to-end host-runnable composition.
+
 ## Build and test
 
 ```sh
