@@ -37,6 +37,13 @@ cycles. See [ARCHITECTURE.md](https://github.com/DCRimbaud/embedded-c-kit/blob/m
 - Use [vivado-vitis-template](https://github.com/DCRimbaud/vivado-vitis-template) for MicroBlaze/Zynq
   Block Design creation, Vitis skeletons, AXI-Lite RTL, XDC, and XSA/BSP integration.
 
+## Related repositories
+
+- [DCRimbaud/dotnet-serial-toolkit](https://github.com/DCRimbaud/dotnet-serial-toolkit) - C# serial,
+  command, diagnostics, JSONL, and architecture-gate toolkit.
+- [DCRimbaud/vivado-vitis-template](https://github.com/DCRimbaud/vivado-vitis-template) - MicroBlaze/Zynq
+  Vivado/Vitis platform templates and AXI-Lite RTL.
+
 ## Build and test
 
 ```sh
